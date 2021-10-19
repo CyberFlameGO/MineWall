@@ -10,7 +10,7 @@ The application is comprised of 3 different layers of mitigation, depending on t
 - The graylist is based on low risk countries that rarely are the source of bots. The behavior is to limit the connection speed with a permissive ratelimit.
 - The graylist (default) behavior is to strongly limit incoming connections via strict ratelimit.
 
-
+![Cloudflare Radar by Country](/Img/radar-country.png)
 
 
 # Sources
