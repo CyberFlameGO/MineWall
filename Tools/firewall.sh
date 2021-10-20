@@ -43,6 +43,7 @@ graylist_unverified=15
 
 
 country-list="https://raw.githubusercontent.com/herrbischoff/country-ip-blocks/master/ipv4/"
+safety-list="https://api.entryrise.com/minewall/"
 
 wgetd="wget -q -c --retry-connrefused -t 0"
 
@@ -59,12 +60,23 @@ ipset -N -! mw_graylist hash:net maxelem 10000
 ipset -N -! mw_whitelist hash:net maxelem 10000
 
 
+ 
+echo "Generating whitelist for the firewall..."
+for ip in $(curl $safety-list/{wireless,residential,business}.iplist); do
+  ipset -A mw_whitelist $ip
+done
  # Create the graylist of safer countries. It's really important for the base check.
  echo "Generating graylist for the firewall..."
- for ip in $(curl $country-list/{ro,ua,tr,nl,de}.cidr); do
+ for ip in $(curl $country-list/{ro,hu,gb,au,dk,bg,ie,pt,gr}.cidr); do
   ipset -A mw_graylist $ip
  done
- echo "Graylist finished generating."
+
+echo "Generating blacklist for firewall."
+for ip in $(curl $safety-list/{others}.iplist); do
+  ipset -A mw_blacklist $ip
+done
+#
+# The blacklist makes sure any "smart bots" are blocked in time on your server after a while.
  
 # Off the table just allow the whitelisted users and drop the blacklisted ones.
 $iptables -A MineWall -p tcp --dport $protect_port -m set --match-set mw_whitelist src -j ACCEPT
