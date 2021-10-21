@@ -18,3 +18,7 @@ We believe transparency in our forensic research is key to replicability and the
 
 https://radar.cloudflare.com/
 https://github.com/herrbischoff/country-ip-blocks
+
+# Explanatory Schema
+
+![MineWall Explanation Schema](/Img/drawio.png)
