@@ -38,6 +38,12 @@ protect_port=25565
 # Max graylisted connections per second. This can be higher, and ensures an attack won't be too high for the second pass firewall.
 graylist_verified=100
 graylist_unverified=15
+graylist_concurrent=3
+
+# How many bytes before sending the player to the remote checker to check for info. Please don't change if you don't
+# know what you're doing as you may get yourself locked out of the API.
+#
+checker_minconn=26214400
 
 # MISC. THESE VALUES MAY CHANGE IN THE FUTURE
 
@@ -55,10 +61,12 @@ echo "Preparing clean ipset configuration"
 ipset -F mw_blacklist
 ipset -F mw_graylist
 ipset -F mw_whitelist
+ipset -F mw_checklist
+
 ipset -N -! mw_blacklist hash:net maxelem 1500000 timeout $timeout
 ipset -N -! mw_graylist hash:net maxelem 10000
 ipset -N -! mw_whitelist hash:net maxelem 10000
-
+ipset -N -! mw_checklist hash:net maxelem 30 timeout 300
 
  
 echo "Generating whitelist for the firewall..."
@@ -79,14 +87,19 @@ done
 # The blacklist makes sure any "smart bots" are blocked in time on your server after a while.
  
 # Off the table just allow the whitelisted users and drop the blacklisted ones.
-$iptables -A MineWall -p tcp --dport $protect_port -m set --match-set mw_whitelist src -j ACCEPT
-$iptables -A MineWall -p tcp --dport $protect_port -m set --match-set mw_blacklist src -j DROP
+iptables -A MineWall -p tcp --dport $protect_port -m connbytes --connbytes $checker_minconn --connbytes-dir reply --connbytes-mode bytes -j SET --add-set mw_checklist
 
-$iptables -A MineWall -p tcp --dport $protect_port --syn -m set --match-set mw_graylist -m limit --limit $graylist_verified/s src -j ACCEPT
-$iptables -A MineWall -p tcp --dport $protect_port --syn -m limit --limit $graylist_unverified/s -j ACCEPT
-$iptables -A MineWall -p tcp --dport $protect_port --syn -j DROP
+iptables -A MineWall -p tcp --dport $protect_port -m set --match-set mw_whitelist src -j ACCEPT
+iptables -A MineWall -p tcp --dport $protect_port -m set --match-set mw_blacklist src -j DROP
+
+iptables -A MineWall -p tcp --dport $protect_port --syn -m set --match-set mw_graylist -m limit --limit $graylist_verified/s src -j ACCEPT
+iptables -A MineWall -p tcp --dport $protect_port --syn -m limit --limit $graylist_unverified/s -j ACCEPT
+iptables -A MineWall -p tcp --dport $protect_port --syn -m connlimit ! --connlimit-above $graylist_concurrent -j ACCEPT
+
+iptables -A MineWall -p tcp --dport $protect_port --syn -j DROP
 
 # Add MineWall to iptables and remove it just in case it is already there.
 $iptables -D INPUT -p tcp -j MineWall
 $iptables -A INPUT -p tcp -j MineWall
-echo "Firewall applied successfully."
+
+echo "Firewall applied successfully. Please add the whitelister script to crontab (each minute) to finish installation"
