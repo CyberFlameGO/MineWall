@@ -1,4 +1,4 @@
-# MineWall
+![MineWall Explanation Schema](/Img/minewall.png)
 
 MineWall is a Layer 3 mitigation toolset for protocol specifications like Minecraft. It uses forensic data from multiple providers and experience working with 4 figure player Minecraft networks.
 
