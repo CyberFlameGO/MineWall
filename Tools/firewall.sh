@@ -29,7 +29,8 @@
 #    (!): You can also set it to share your found proxies so they can be blocked later mainstream.
 
 echo "Installing required dependencies: curl, iptables-persistent, ipset"
-apt -y -qq install curl iptables-persistent ipset > /dev/null
+apt -y -qq install curl iptables-persistent ipset conntrack > /dev/null
+yum -y install curl iptables-service ipset-service conntrack > /dev/null
 echo "Installed required depends."
 # The port you want to protect. for ranges, use FROM:TO
 protect_port=20003
@@ -46,7 +47,7 @@ graylist_concurrent=3
 checker_minconn=26214400
 
 # MISC. THESE VALUES MAY CHANGE IN THE FUTURE
-
+target_chain=INPUT
 
 country_list="https://raw.githubusercontent.com/herrbischoff/country-ip-blocks/master/ipv4/"
 safety_list="https://api.entryrise.com/minewall/"
@@ -87,8 +88,6 @@ done
 # The blacklist makes sure any "smart bots" are blocked in time on your server after a while.
  
 # Off the table just allow the whitelisted users and drop the blacklisted ones.
-iptables -A MineWall -p tcp --tcp-flags FIN FIN --dport $protect_port -m connbytes --connbytes $checker_minconn --connbytes-dir reply --connbytes-mode bytes -j SET --add-set mw_checklist src
-
 iptables -A MineWall -p tcp --dport $protect_port -m set --match-set mw_whitelist src -j ACCEPT
 iptables -A MineWall -p tcp --dport $protect_port -m set --match-set mw_blacklist src -j DROP
 
@@ -99,7 +98,14 @@ iptables -A MineWall -p tcp --dport $protect_port --syn -m connlimit ! --connlim
 iptables -A MineWall -p tcp --dport $protect_port --syn -j DROP
 
 # Add MineWall to iptables and remove it just in case it is already there.
-iptables -D DOCKER -p tcp -j MineWall
-iptables -I DOCKER -p tcp -j MineWall
+iptables -D $target_chain -p tcp -j MineWall
+iptables -I $target_chain -p tcp -j MineWall
+
+# REDHAT BASED
+iptables-save > /etc/sysconfig/iptables
+# DEBIAN BASED
+iptables-save > /etc/iptables/rules.v4
+# Having 2 files is not ideal but not an issue
+# TODO: Check OS and apply specific commands only.
 
 echo "Firewall applied successfully. Please add the whitelister script to crontab (each minute) to finish installation"
