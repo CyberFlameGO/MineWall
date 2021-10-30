@@ -5,7 +5,7 @@ safety_list="https://api.entryrise.com/minewall/"
 # Make sure to change protect port to your own protect port.
 # $6 > X means the packet count before validating user.
 # Recommending a value for X between 10k (~100 seconds) and 50k (~500 seconds) for validation)
-command_check=$(conntrack -L | awk '{if ($6 > 10000 && $4 == "ESTABLISHED" && $8 == "dport=20003") print $5}');
+command_check=$(conntrack -L | awk '{if ($6 > 300000 && $4 == "ESTABLISHED" && $8 == "dport=20003") print $5}');
 #command_check=$(conntrack -L | awk '{if ($6 > PACKETS_TO_WHITELIST && $4 == "CONNECTION FULLY RUNNING" && $8 == "dport=PORT OF SERVER") print $5}');
 
 echo "Updating blacklist for firewall."

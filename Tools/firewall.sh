@@ -33,13 +33,13 @@ apt -y -qq install curl iptables-persistent ipset conntrack > /dev/null
 yum -y install curl iptables-service ipset-service conntrack > /dev/null
 echo "Installed required depends."
 # The port you want to protect. for ranges, use FROM:TO
-protect_port=20003
+protect_port=25565
 
 
 # Max graylisted connections per second. This can be higher, and ensures an attack won't be too high for the second pass firewall.
-graylist_verified=100
-graylist_unverified=15
-graylist_concurrent=3
+graylist_verified=8
+graylist_unverified=7
+graylist_concurrent=2
 
 # How many bytes before sending the player to the remote checker to check for info. Please don't change if you don't
 # know what you're doing as you may get yourself locked out of the API.
@@ -47,7 +47,7 @@ graylist_concurrent=3
 checker_minconn=26214400
 
 # MISC. THESE VALUES MAY CHANGE IN THE FUTURE
-target_chain=INPUT
+target_chain=DOCKER
 
 country_list="https://raw.githubusercontent.com/herrbischoff/country-ip-blocks/master/ipv4/"
 safety_list="https://api.entryrise.com/minewall/"
@@ -64,7 +64,7 @@ ipset destroy mw_graylist
 ipset destroy mw_whitelist
 ipset destroy mw_checklist
 
-ipset -N -! mw_blacklist hash:net maxelem 100000 timeout 300
+ipset -N -! mw_blacklist hash:net maxelem 100000 timeout 3600
 ipset -N -! mw_graylist hash:net maxelem 100000
 ipset -N -! mw_whitelist hash:net maxelem 100000
 ipset -N -! mw_checklist hash:net maxelem 30 timeout 300
@@ -76,7 +76,7 @@ for ip in $(curl -L $safety_list/{wireless,residential,business}.iplist); do
 done
  # Create the graylist of safer countries. It's really important for the base check.
  echo "Generating graylist for the firewall..."
- for ip in $(curl -L $country_list/{ro,hu,gb,au,dk,bg,ie,pt,gr}.cidr); do
+ for ip in $(curl -L $country_list/{gb,de,fr,ro}.cidr); do
   ipset -A mw_graylist $ip
  done
 
@@ -91,9 +91,10 @@ done
 iptables -A MineWall -p tcp --dport $protect_port -m set --match-set mw_whitelist src -j ACCEPT
 iptables -A MineWall -p tcp --dport $protect_port -m set --match-set mw_blacklist src -j DROP
 
-iptables -A MineWall -p tcp --dport $protect_port --syn -m set --match-set mw_graylist src -m limit --limit $graylist_verified/s -j ACCEPT
+iptables -A MineWall -p tcp --dport $protect_port --syn -m connlimit --connlimit-above $graylist_concurrent -j DROP
+
 iptables -A MineWall -p tcp --dport $protect_port --syn -m limit --limit $graylist_unverified/s -j ACCEPT
-iptables -A MineWall -p tcp --dport $protect_port --syn -m connlimit ! --connlimit-above $graylist_concurrent -j ACCEPT
+iptables -A MineWall -p tcp --dport $protect_port --syn -m set --match-set mw_graylist src -m limit --limit $graylist_verified/s -j ACCEPT
 
 iptables -A MineWall -p tcp --dport $protect_port --syn -j DROP
 
