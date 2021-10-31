@@ -1,6 +1,6 @@
 ![MineWall Explanation Schema](/Img/minewall.png)
 
-MineWall is a Layer 3 mitigation toolset for protocol specifications like Minecraft. It uses forensic data from multiple providers and experience working with 4 figure player Minecraft networks.
+MineWall is a Layer 7 mitigation toolset for protocol specifications like Minecraft. It uses forensic data from multiple providers and experience working with 4 figure player Minecraft networks to mitigate bot attacks, spam pings, bungee crash attempts, etc.
 
 It is mainly targeted at Minecraft servers, or applications having a similar networking footprint as the former. However, it may work well for other applications where proxies are the main tool used for attacks. It is highly recommended to test pre-deployment, and to take proper measures to optimize for your own end use-case.
 
